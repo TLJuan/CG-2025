@@ -263,6 +263,7 @@ public:
 		return out;
 	}
 
+	
 	std::string getMoveString(Axis axis, int layer, float direction) {
 		//After a movement, return the movement type(F, R, B, etc)
 		//Center(layer 0) is a Special Case(Equals two movements)
@@ -270,10 +271,10 @@ public:
 			// Return a special marker for decomposition in FinalizeSliceRotation
 			if (axis == Axis::X && direction < 0) return "M"; //Middle Slice      - X axis
 			if (axis == Axis::X && direction > 0) return "M'";
-			if (axis == Axis::Y && direction < 0) return "S'"; //"Standing" slice  - Y axis
-			if (axis == Axis::Y && direction > 0) return "S";
-			if (axis == Axis::Z && direction < 0) return "E"; //Equator Slice     - Z axis
-			if (axis == Axis::Z && direction > 0) return "E'";
+			if (axis == Axis::Y && direction < 0) return "E"; //"Standing" slice  - Y axis
+			if (axis == Axis::Y && direction > 0) return "E'";
+			if (axis == Axis::Z && direction < 0) return "S"; //Equator Slice     - Z axis
+			if (axis == Axis::Z && direction > 0) return "S'";
 		}
 		// FACE moves (layer = -1 or 1)
 		std::string face = "";
@@ -402,133 +403,130 @@ public:
 		}
 	}
 	// Update the internal gridPos after a full 90-degree 
-	void FinalizeSliceRotation(Axis axis, int layer, float fullAngle) {
-		int axisIndex = (axis == Axis::X) ? 0 : (axis == Axis::Y) ? 1 : 2;
+
+	// (We will only update the gridPos here, not the modelMatrix, since this is a 
+	// state-tracking helper, not an animation function.)
+	void ApplyWholeCubeRotation(Axis axis, float direction) {
 		for (auto& cubie : cubies) {
-			if (cubie.gridPos[axisIndex] == layer) {
-				//Update Layer assignment
-				int oldX = cubie.gridPos[0];
-				int oldY = cubie.gridPos[1];
-				int oldZ = cubie.gridPos[2];
-				switch (axis) {
-					case Axis::X:
-						if (fullAngle > 0) {
-							cubie.gridPos[1] = -oldZ;
-							cubie.gridPos[2] = oldY;
-						} else {
-							cubie.gridPos[1] = oldZ;
-							cubie.gridPos[2] = -oldY;
-						}
-						break;
-					case Axis::Y:
-						if (fullAngle > 0) {
-							cubie.gridPos[0] = oldZ;
-							cubie.gridPos[2] = -oldX;
-						} else {
-							cubie.gridPos[0] = -oldZ;
-							cubie.gridPos[2] = oldX;
-						}
-						break;
-					case Axis::Z:
-						if (fullAngle > 0) {
-							cubie.gridPos[0] = -oldY;
-							cubie.gridPos[1] = oldX;
-						} else {
-							cubie.gridPos[0] = oldY;
-							cubie.gridPos[1] = -oldX;
-						}
-						break;
-				}
-				
-			}
-		}
-		//Update RubikState string
-				std::string move = getMoveString(axis, layer, fullAngle);
-				std::cout << "MoveMark " << move << std::endl;
-				if (move == "M") {
-					//std::cout << "\n --- MIDDLE MOVED ---  \n";
-					MoveList += "L' ";
-					MoveList += "R ";
-					//Special move X
-					// Rotate all cubies around X axis
-					/*for (auto& cubie : cubies) {
-						int oldY = cubie.gridPos[1];
-						int oldZ = cubie.gridPos[2];
+			int oldX = cubie.gridPos[0];
+			int oldY = cubie.gridPos[1];
+			int oldZ = cubie.gridPos[2];
+
+			switch (axis) {
+				case Axis::X: // Rotation around X (x or x')
+					if (direction > 0) { // x (+90 deg)
 						cubie.gridPos[1] = -oldZ;
 						cubie.gridPos[2] = oldY;
-					}*/
-					//MoveList += "x ";
-				}
-				else if(move == "M'")
-				{
-					MoveList += "L ";
-					MoveList += "R' ";
-					
-					// same as above but opposite sign
-					/*for (auto& cubie : cubies) {
-						int oldY = cubie.gridPos[1];
-						int oldZ = cubie.gridPos[2];
+					} else { // x' (-90 deg)
 						cubie.gridPos[1] = oldZ;
 						cubie.gridPos[2] = -oldY;
-					}*/
-					
-				}
-				else if(move == "S")
-				{
-					//std::cout << "\n --- STANDING MOVED ---  \n";
-					MoveList += "U' ";
-					MoveList += "D ";
-					
-					// Rotate all cubies around Y axis
-					/*for (auto& cubie : cubies) {
-						int oldY = cubie.gridPos[0];
-						int oldZ = cubie.gridPos[2];
+					}
+					break;
+				case Axis::Y: // Rotation around Y (y or y')
+					if (direction > 0) { // y (+90 deg)
 						cubie.gridPos[0] = oldZ;
-						cubie.gridPos[2] = -oldY;
-					}*/
-					
-				}
-				else if(move == "S'")
-				{
-					MoveList += "U ";
-					MoveList += "D' ";
-					/*for (auto& cubie : cubies) {
-						int oldY = cubie.gridPos[0];
-						int oldZ = cubie.gridPos[2];
+						cubie.gridPos[2] = -oldX;
+					} else { // y' (-90 deg)
 						cubie.gridPos[0] = -oldZ;
-						cubie.gridPos[2] = oldY;
-					}*/
-				}
-				else if(move == "E")
-				{
-					//std::cout << "\n --- EQUATOR MOVED ---  \n";
-					MoveList += "F ";
-					MoveList += "B' ";
-					/*for (auto& cubie : cubies) {
-						int oldY = cubie.gridPos[0];
-						int oldZ = cubie.gridPos[1];
-						cubie.gridPos[0] = oldZ;
-						cubie.gridPos[1] = -oldY;
-					}*/
-				}
-				else if(move == "E'")
-				{
-					MoveList += "F' ";
-					MoveList += "B ";
-					
-					/*for (auto& cubie : cubies) {
-						int oldY = cubie.gridPos[0];
-						int oldZ = cubie.gridPos[1];
-						cubie.gridPos[0] = -oldZ;
-						cubie.gridPos[1] = oldY;
-					}*/
-				}
-				else
-				{
-					MoveList += move + " ";
-				}
+						cubie.gridPos[2] = oldX;
+					}
+					break;
+				case Axis::Z: // Rotation around Z (z or z')
+					if (direction > 0) { // z (+90 deg)
+						cubie.gridPos[0] = -oldY;
+						cubie.gridPos[1] = oldX;
+					} else { // z' (-90 deg)
+						cubie.gridPos[0] = oldY;
+						cubie.gridPos[1] = -oldX;
+					}
+					break;
+			}
+		}
 	}
 	
+	// In RubikCube.h, inside the RubikCube class
+void FinalizeSliceRotation(Axis axis, int layer, float fullAngle) {
+    int axisIndex = (axis == Axis::X) ? 0 : (axis == Axis::Y) ? 1 : 2;
+    for (auto& cubie : cubies) {
+        if (cubie.gridPos[axisIndex] == layer) {
+            //Update Layer assignment (This logic for 9 cubies is CORRECT and is kept)
+            int oldX = cubie.gridPos[0];
+            int oldY = cubie.gridPos[1];
+            int oldZ = cubie.gridPos[2];
+            switch (axis) {
+                case Axis::X:
+                    if (fullAngle > 0) {
+                        cubie.gridPos[1] = -oldZ;
+                        cubie.gridPos[2] = oldY;
+                    } else {
+                        cubie.gridPos[1] = oldZ;
+                        cubie.gridPos[2] = -oldY;
+                    }
+                    break;
+                case Axis::Y:
+                    if (fullAngle > 0) {
+                        cubie.gridPos[0] = oldZ;
+                        cubie.gridPos[2] = -oldX;
+                    } else {
+                        cubie.gridPos[0] = -oldZ;
+                        cubie.gridPos[2] = oldX;
+                    }
+                    break;
+                case Axis::Z:
+                    if (fullAngle > 0) {
+                        cubie.gridPos[0] = -oldY;
+                        cubie.gridPos[1] = oldX;
+                    } else {
+                        cubie.gridPos[0] = oldY;
+                        cubie.gridPos[1] = -oldX;
+                    }
+                    break;
+            }
+            
+        }
+    }
+
+    // Update RubikState string
+    std::string move = getMoveString(axis, layer, fullAngle);
+    std::cout << "MoveMark " << move << std::endl;
+    
+    // Decompose M, S, E into Outer Moves (R, L, U, D, F, B) + Whole Cube (x, y, z)
+    // NOTE: This assumes your external script/pycuber handles 'x', 'y', 'z' in the input scramble string.
+    if (move == "M") {
+        // M (Clockwise, -90 deg X-axis) is R L' x'
+        MoveList += "R L' x' ";
+		std::cout << "M - ";
+    }
+    else if(move == "M'") {
+        // M' (Counter-Clockwise, +90 deg X-axis) is R' L x
+        MoveList += "R' L x ";
+		std::cout << "M' - ";
+    }
+    // E: Y-Axis rotation (Between U/D faces).
+		else if(move == "E") {
+            // E (CW, -90 deg Y-axis) is U D' y'
+			MoveList += "U D' y' ";
+		}
+		else if(move == "E'") {
+            // E' (CCW, +90 deg Y-axis) is U' D y
+			MoveList += "U' D y ";
+		}
+        
+        // S: Z-Axis rotation (Between F/B faces).
+		else if(move == "S") {
+            // S (CW, +90 deg Z-axis) is F B' z
+			MoveList += "F B' z ";
+		}
+		else if(move == "S'") {
+            // S' (CCW, -90 deg Z-axis) is F' B z'
+			MoveList += "F' B z' ";
+		}
+    else {
+        // Standard moves (R, L, U, D, F, B)
+        MoveList += move + " ";
+    }
+}
+
 	// --- State and Rendering ---
 	void Draw(const Shader& shader) {
 		for (const auto& cubie : cubies) {
