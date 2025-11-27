@@ -29,6 +29,7 @@ struct Material {
 
 uniform Light light;
 uniform Material material;
+uniform float opacity;
 
 uniform vec3 viewPos; // Camera position
 
@@ -62,6 +63,6 @@ void main() {
         specular *= attenuation;
 
         vec3 result = ambient + diffuse + specular;
-        FragColor = vec4(result, texColor.a);
+        FragColor = vec4(result, opacity);//texColor.a);
     }
 }

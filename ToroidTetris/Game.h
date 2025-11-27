@@ -205,7 +205,7 @@ public:
 		shader.use();
 		shader.setMat4("projection", projection);
 		shader.setMat4("view", cam.GetViewMatrix());
-		shader.setInt("mode", 0); // solid
+		//shader.setInt("mode", 0); // solid
 
 		// ---- Draw circular floor base ----
 		{
@@ -244,6 +244,9 @@ public:
 		// Set Material
 		shader.setVec3("material.specular", materialSpecular);
 		shader.setFloat("material.shininess", materialShininess);
+		
+		float currentOpacity = 0.7f; // transparency
+		shader.setFloat("opacity", currentOpacity);
 		
 		shader.setMat4("projection", projection);
         shader.setMat4("view", cam.GetViewMatrix());

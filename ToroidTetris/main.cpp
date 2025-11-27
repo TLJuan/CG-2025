@@ -13,19 +13,19 @@ Shader* g_shader = nullptr;
 unsigned int g_tetrisAtlas = 0;
 
 // Camera orbit
-float ORBIT_RADIUS = 14.0f;
+float ORBIT_RADIUS = 18.0f;
 float orbitAngleY = PI / 4.0f;
 float orbitAngleX = PI / 6.0f;
 const float orbitSpeed = 0.8f;
 
-float CustomRadius = 12.0f;
+float CustomRadius;
 // Time
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-// Gravity timer (will use later)
+// Gravity timer 
 float fallTimer = 0.0f;
-float fallDelay = 0.8f;  // seconds per drop (level 1)
+float fallDelay = 0.8f;  // seconds per drop 
 
 // ===================================================================
 // GLFW CALLBACKS
@@ -102,7 +102,7 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_CORE_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
 
-    GLFWwindow* window = glfwCreateWindow(1200, 800, "Tetris Torus — Cylindrical 3D Tetris", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(600, 900, "Tetris Torus — Cylindrical 3D Tetris", nullptr, nullptr);
     if (!window) { std::cerr << "Failed to create window\n"; return -1; }
 
     glfwMakeContextCurrent(window);
@@ -122,8 +122,9 @@ int main() {
     g_shader = &shader;
     shader.use();
     shader.setInt("entryTexture", 0);
-
-    // Load Tetris Atlas (your 448×64 or 512×512 image with 7 colors)
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // Load Tetris Atlas (448×64 or 512×512 image with 7 colors)
     int w, h, n;
     unsigned char* data = stbi_load("textures/tetris_atlas.png", &w, &h, &n, 4);
     if (!data) {
@@ -140,13 +141,13 @@ int main() {
     stbi_image_free(data);
 
     // === CREATE ALL MINO MESHES ===
-    CreateAllMinoMeshes();  // ← this function must exist (see below)
+    CreateAllMinoMeshes();
 
     // Start game & renderer
     g_tetrisGame.start();
     g_renderer = new TetrisRenderer(g_tetrisGame, shader);
     g_renderer->SetRadius(2.0f);
-
+	float CustomRadius = 2;
     Camera camera(vec3(0, 10, 30));
 
     // ===================================================================
@@ -182,7 +183,7 @@ int main() {
 
         // Projection
         matrix4 projection;
-        projection.Perspective(45.0f * (PI/180.0f), 1200.0f / 800.0f, 0.1f, 200.0f);
+        projection.Perspective(45.0f * (PI/180.0f), 600.0f / 900.0f, 0.1f, 200.0f);
 		
         // Render
         g_renderer->Render(camera, projection);

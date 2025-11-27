@@ -362,7 +362,6 @@ public:
         return lines;
     }
 
-    // For rendering later – you will use this
     Mino getCell(int x, int y) const { return (y>=0 && y<BOARD_HEIGHT) ? cells[y][x] : Mino::Empty; }
 };
 
