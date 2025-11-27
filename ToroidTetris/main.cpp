@@ -13,7 +13,7 @@ Shader* g_shader = nullptr;
 unsigned int g_tetrisAtlas = 0;
 
 // Camera orbit
-float ORBIT_RADIUS = 28.0f;
+float ORBIT_RADIUS = 14.0f;
 float orbitAngleY = PI / 4.0f;
 float orbitAngleX = PI / 6.0f;
 const float orbitSpeed = 0.8f;
@@ -145,7 +145,7 @@ int main() {
     // Start game & renderer
     g_tetrisGame.start();
     g_renderer = new TetrisRenderer(g_tetrisGame, shader);
-    g_renderer->SetRadius(14.0f);
+    g_renderer->SetRadius(2.0f);
 
     Camera camera(vec3(0, 10, 30));
 
@@ -183,7 +183,7 @@ int main() {
         // Projection
         matrix4 projection;
         projection.Perspective(45.0f * (PI/180.0f), 1200.0f / 800.0f, 0.1f, 200.0f);
-
+		
         // Render
         g_renderer->Render(camera, projection);
 

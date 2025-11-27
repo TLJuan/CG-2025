@@ -9,7 +9,7 @@ void LoadTetrisAtlas() {
     glGenTextures(1, &tetrisAtlas);
     glBindTexture(GL_TEXTURE_2D, tetrisAtlas);
 
-    unsigned char* data = stbi_load("tetris_atlas.png", &atlasW, &atlasH, nullptr, 4);
+    unsigned char* data = stbi_load("textures/tetris_atlas.png", &atlasW, &atlasH, nullptr, 4);
     if (!data) {
         std::cout << "Failed to load tetris_atlas.png!\n";
         // fallback: create solid red texture
@@ -33,17 +33,41 @@ struct MinoUV {
     UVRange uv;
 };
 
+const float U_SIZE = 1.0f / 7.0f;
+const float V_SIZE = 1.0f ;
+
+// Assuming an 8-tile wide (1 row high) texture atlas: 1.0 / 8.0 = 0.125
+float U_TILE_SIZE = 1.0f/7.0f;//0.125f; 
+
 const std::array<MinoUV, 9> MinoUVs{{
-    { {0.0f,  0.0f, 0.0f, 0.0f} },     // Empty
-    { {0.00f, 0.00f, 0.25f, 0.50f} },   // I     → tile (0,0)
-    { {0.25f, 0.00f, 0.50f, 0.50f} },   // O
-    { {0.50f, 0.00f, 0.75f, 0.50f} },   // T
-    { {0.75f, 0.00f, 1.00f, 0.50f} },   // S
-    { {0.00f, 0.50f, 0.25f, 1.00f} },   // Z
-    { {0.25f, 0.50f, 0.50f, 1.00f} },   // J
-    { {0.50f, 0.50f, 0.75f, 1.00f} },   // L
-    { {0.75f, 0.50f, 1.00f, 1.00f} }    // Ghost (darker gray)
+    { {0.0f, 0.0f, 0.0f, 0.0f} },   // 0. Empty (no texture)
+    
+    // I Piece (U: 0.000 to 0.125, V: 0.00 to 1.00)
+    { {0.000f, 0.00f, U_TILE_SIZE * 1.0f, 1.00f} },  // 1. I 
+    
+    // O Piece (U: 0.125 to 0.250, V: 0.00 to 1.00)
+    { {U_TILE_SIZE * 1.0f, 0.00f, U_TILE_SIZE * 2.0f, 1.00f} },  // 2. O
+    
+    // T Piece (U: 0.250 to 0.375, V: 0.00 to 1.00)
+    { {U_TILE_SIZE * 2.0f, 0.00f, U_TILE_SIZE * 3.0f, 1.00f} },  // 3. T
+    
+    // S Piece (U: 0.375 to 0.500, V: 0.00 to 1.00)
+    { {U_TILE_SIZE * 3.0f, 0.00f, U_TILE_SIZE * 4.0f, 1.00f} },  // 4. S
+    
+    // Z Piece (U: 0.500 to 0.625, V: 0.00 to 1.00)
+    { {U_TILE_SIZE * 4.0f, 0.00f, U_TILE_SIZE * 5.0f, 1.00f} },  // 5. Z
+    
+    // J Piece (U: 0.625 to 0.750, V: 0.00 to 1.00)
+    { {U_TILE_SIZE * 5.0f, 0.00f, U_TILE_SIZE * 6.0f, 1.00f} },  // 6. J
+    
+    // L Piece (U: 0.750 to 0.875, V: 0.00 to 1.00)
+    { {U_TILE_SIZE * 6.0f, 0.00f, U_TILE_SIZE * 7.0f, 1.00f} },  // 7. L
+    
+    // Ghost Piece (U: 0.875 to 1.000, V: 0.00 to 1.00)
+    { {U_TILE_SIZE * 7.0f, 0.00f, U_TILE_SIZE * 8.0f, 1.00f} }   // 8. Ghost
 }};
+
+
 std::array<Mesh, 9> MinoMeshes;  // index = Mino enum
 /*
 void CreateAllMinoMeshes() {
@@ -68,78 +92,16 @@ void CreateAllMinoMeshes() {
 }
 
 
-/*	void CreateAllCubieMeshes() {
-		for (int i = 1; i <= 8; ++i) {  // skip Empty
-			Mino m = static_cast<Mino>(i);
-			UVRange uv = MinoUVs[i].uv;
-
-			CubieMeshes[i] = CreateRubikCubieMesh(
-				uv, uv, uv, uv, uv, uv,  // same UV on all faces
-				0, 0, 0
-			);
-			CubieMeshes[i].Setup();
-		}
-		// Ghost uses dim version or special tile
-		CubieMeshes[8] = CreateRubikCubieMesh(
-			MinoUVs[8].uv, MinoUVs[8].uv, MinoUVs[8].uv,
-			MinoUVs[8].uv, MinoUVs[8].uv, MinoUVs[8].uv
-		);
-		CubieMeshes[8].Setup();
-	}
-*/
-/*class Cubies {
-public:
-    int gridX, gridY;
-    Mino type;
-    matrix4 modelMatrix;
-
-    Cubies(int x, int y, Mino t) : gridX(x), gridY(y), type(t) {
-        UpdateModelMatrix();
-    }
-
-    void UpdateModelMatrix(float radius = 12.0f, float size = 1.0f) {
-        float angle = (float(gridX) / BOARD_WIDTH) * 2.0f * PI;
-        float x = radius * cosf(angle);
-        float z = radius * sinf(angle);
-        float y = gridY * size;
-
-        modelMatrix.Identity();
-        modelMatrix.Translate(x, y, z);
-        modelMatrix.Scale(size * 0.98f, size * 0.98f, size * 0.98f);
-    }
-
-    void Draw(const Shader& shader) const {
-        if (type == Mino::Empty) return;
-
-        shader.setMat4("model", modelMatrix);
-        shader.setInt("mode", 0);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, tetrisAtlas);
-        glBindVertexArray(CubieMeshes[(int)type].VAO);
-        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-    }
-
-    // Ghost uses wireframe
-    void DrawGhost(const Shader& shader) const {
-        shader.setMat4("model", modelMatrix);
-        shader.setInt("mode", 1);  // Yellow wireframe from your shader
-
-        glBindVertexArray(CubieMeshes[(int)type].VAO);
-        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-    }
-};
-*/
 
 class Cubies {
 public:
     int gridX, gridY;
     Mino type = Mino::Empty;
     matrix4 modelMatrix;
-    float radius = 12.0f;
+    float radius = 2.0f;
     float size   = 1.0f;
 
-    Cubies(int x, int y, Mino t, float r = 12.0f, float s = 1.0f)
+    Cubies(int x, int y, Mino t, float r = 2.0f, float s = 1.0f)
         : gridX(x), gridY(y), type(t), radius(r), size(s) {
         UpdateModelMatrix();
     }
@@ -151,19 +113,15 @@ void UpdateModelMatrix() {
     float x = radius * cosf(angle);
     float z = radius * sinf(angle);
     float y = gridY * size;
-    
-    // 2. Use existing, faulty functions to create new, temporary matrices
+	
     matrix4 translationMatrix;
-    translationMatrix.Translate(x, y, z); // translationMatrix is now ONLY the translation
+    translationMatrix.Translate(x, y, z); 
 
     //matrix4 scaleMatrix;
-    //scaleMatrix.Scale(size * 0.98f, size * 0.98f, size * 0.98f); // scaleMatrix is now ONLY the scaling
-
-    // 3. Combine them using matrix multiplication (Scale must happen before Translate)
+    //scaleMatrix.Scale(size * 0.98f, size * 0.98f, size * 0.98f);
     // M_model = M_Translation * M_Scale
 	modelMatrix = translationMatrix;
     //modelMatrix = translationMatrix * scaleMatrix;
-    // Note: If you add rotation later, it would be:
     // modelMatrix = translationMatrix * rotationMatrix * scaleMatrix;
 }
 
@@ -191,11 +149,13 @@ private:
 
 public:
     TetrisGame& game;
-    Shader& shader;  // reference to your main shader
+    Shader& shader; 
+	Mesh floorMesh;
 
     TetrisRenderer(TetrisGame& g, Shader& s) : game(g), shader(s) {
         
 		SetRadius(radius);
+		floorMesh = CreateCircleMesh(radius + 0.6f, 64, -0.5f);
 		//RebuildBoard();
         //UpdateCurrentPiece();
         //UpdateGhost();
@@ -239,30 +199,54 @@ public:
     }
 
     void Render(Camera& cam, const matrix4& projection) {
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, tetrisAtlas);
+        //glActiveTexture(GL_TEXTURE0);
+        //glBindTexture(GL_TEXTURE_2D, tetrisAtlas);
+		
+		shader.use();
+		shader.setMat4("projection", projection);
+		shader.setMat4("view", cam.GetViewMatrix());
+		shader.setInt("mode", 0); // solid
+
+		// ---- Draw circular floor base ----
+		{
+			matrix4 floorModel;
+			floorModel.Identity();
+			shader.setMat4("model", floorModel);
+
+			glBindVertexArray(floorMesh.VAO);
+			glDrawElements(GL_TRIANGLES, floorMesh.indices.size(), GL_UNSIGNED_INT, 0);
+		}
+		// ---------------------------------
+
 		
 		
-		//vec3 lightPos(2.0f, 3.0f, 4.0f); 
-		//vec3 lightAmbient(0.3f, 0.3f, 0.3f);
-		//vec3 lightDiffuse(1.0f, 1.0f, 1.0f);
-		//vec3 lightSpecular(1.0f, 1.0f, 1.0f);
 		
+		vec3 lightPos(0.0f, 0.0f, 0.0f); 
+		vec3 lightAmbient(0.4f, 0.4f, 0.4f);
+		vec3 lightDiffuse(0.70f, 0.70f, 0.70f);
+		vec3 lightSpecular(1.0f, 1.0f, 1.0f);
+		
+		vec3 materialSpecular(0.5f, 0.5f, 0.5f);
+		float materialShininess = 32.0f;
 		
         shader.use();
-        shader.setMat4("projection", projection);
-        shader.setMat4("view", cam.GetViewMatrix());
-        shader.setVec3("viewPos", cam.Position);
+		shader.setVec3("viewPos", cam.Position);
 
         // Light (tweak to taste)
-        shader.setVec3("light.position", vec3(2.0f, 3.0f, 4.0f));
-        shader.setVec3("light.ambient",  vec3(0.6f, 0.6f, 0.6f));
-        shader.setVec3("light.diffuse",  vec3(1.0f, 1.0f, 1.0f));
-        shader.setVec3("light.specular", vec3(1.0f, 1.0f, 1.2f));
+        shader.setVec3("light.position", lightPos);
+        shader.setVec3("light.ambient",  lightAmbient);
+        shader.setVec3("light.diffuse",  lightDiffuse);
+        shader.setVec3("light.specular", lightSpecular);
 		
+		shader.setFloat("light.constant", 1.0f);
+		shader.setFloat("light.linear", 0.09f);
+		shader.setFloat("light.quadratic", 0.032f);
 		// Set Material
-		shader.setVec3("material.specular", vec3(0.8f, 0.8f, 0.8f));
-		shader.setFloat("material.shininess", 64.0f);
+		shader.setVec3("material.specular", materialSpecular);
+		shader.setFloat("material.shininess", materialShininess);
+		
+		shader.setMat4("projection", projection);
+        shader.setMat4("view", cam.GetViewMatrix());
 
         // Draw order: board → ghost → current
         for (auto& c : boardCubies)          c.Draw(shader, false);

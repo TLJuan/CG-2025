@@ -327,6 +327,46 @@ static Mesh CreateRubikCubieMesh(
     return cube;
 }
 
+static Mesh CreateCircleMesh(float radius = 5.0f, int segments = 64, float y = 0.0f)
+{
+    std::vector<float> verts;
+    std::vector<unsigned int> inds;
+
+    // Center vertex
+    verts.insert(verts.end(), {
+        0.0f, y, 0.0f,     // position
+        0.5f, 0.5f,        // UV
+        0.0f, 1.0f, 0.0f   // normal (up)
+    });
+
+    // Ring vertices
+    for (int i = 0; i <= segments; i++)
+    {
+        float a = (float)i / segments * 2.0f * PI;
+        float x = cosf(a) * radius;
+        float z = sinf(a) * radius;
+
+        verts.insert(verts.end(), {
+            x, y, z,
+            (x / (radius * 2.0f)) + 0.5f,      // simple UV projection
+            (z / (radius * 2.0f)) + 0.5f,
+            0.0f, 1.0f, 0.0f                   // normal
+        });
+    }
+
+    // Triangles
+    for (int i = 1; i <= segments; i++)
+    {
+        inds.push_back(0);
+        inds.push_back(i);
+        inds.push_back(i + 1);
+    }
+
+    Mesh circle(verts, inds);
+    circle.Setup();
+    return circle;
+}
+
 
 //How to call? 
 //Mesh cube = CreateCube(1.0f, 0.0f, -2.0f);

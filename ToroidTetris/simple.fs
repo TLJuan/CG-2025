@@ -10,10 +10,15 @@ uniform int mode;
 
 //Light structure
 struct Light {
-    vec3 position; 
+    vec3 position;  
     vec3 ambient;
-    vec3 diffuse; 
+    vec3 diffuse;   
     vec3 specular;
+    
+    // Attenuation Factors
+    float constant;  
+    float linear;
+    float quadratic;
 };
 
 //Material structure
@@ -33,25 +38,29 @@ void main() {
     else if (mode == 2)
         FragColor = vec4(1.0, 0.0, 0.0, 1.0); // Red for vertices (Points)
     else // mode == 0 (Faces - Filled)
-    {		
+    {       
         vec4 texColor = texture(entryTexture, TexCoord);
 
-        // 1. Ambient Lighting
-        vec3 ambient = light.ambient * vec3(texColor); 
+        // Calculate Light Direction (from Fragment to Light) and Distance
+        vec3 lightVec = light.position - FragPos;
+        float distance = length(lightVec);
+        vec3 lightDir = normalize(lightVec);
 
-        // 2. Diffuse Lighting
+        vec3 ambient = light.ambient * vec3(texColor); 
+        
+        float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
+        
         vec3 norm = normalize(Normal);
-        vec3 lightDir = normalize(light.position - FragPos);
         float diff = max(dot(norm, lightDir), 0.0);
         vec3 diffuse = light.diffuse * (diff * vec3(texColor));
-
-        // 3. Specular Lighting
+        diffuse *= attenuation; 
+        
         vec3 viewDir = normalize(viewPos - FragPos);
         vec3 reflectDir = reflect(-lightDir, norm);  
         float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-        vec3 specular = light.specular * (spec * material.specular);  
-        
-        // Final Color
+        vec3 specular = light.specular * (spec * material.specular);   
+        specular *= attenuation;
+
         vec3 result = ambient + diffuse + specular;
         FragColor = vec4(result, texColor.a);
     }
